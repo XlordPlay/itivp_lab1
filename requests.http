@@ -1,53 +1,53 @@
 @baseUrl = http://localhost:3000
 
-### Получить список всех транзакций
+### Категории
+GET {{baseUrl}}/categories
+
+### Список транзакций
 GET {{baseUrl}}/transactions
 
-### Получить транзакции с фильтром (query string)
-GET {{baseUrl}}/transactions?type=expense
+### Фильтр + пагинация
+GET {{baseUrl}}/transactions?type=expense&limit=10&offset=0
 
-### Получить одну транзакцию по ID
+### Одна транзакция
 GET {{baseUrl}}/transactions/1
 
-### Транзакция не найдена (404)
+### 404
 GET {{baseUrl}}/transactions/999
 
-### Добавить новую транзакцию
+### Создать
 POST {{baseUrl}}/transactions
 Content-Type: application/json
 
 {
   "type": "expense",
   "amount": 890,
-  "category": "Кафе",
+  "categoryId": 4,
   "description": "Обед в столовой",
   "date": "2026-09-08"
 }
 
-### Неверные данные (400)
+### 400
 POST {{baseUrl}}/transactions
 Content-Type: application/json
 
 {
   "type": "gift",
-  "amount": -10,
-  "category": "Прочее"
+  "amount": -10
 }
 
-### Полное обновление транзакции
+### Обновить
 PUT {{baseUrl}}/transactions/2
 Content-Type: application/json
 
 {
   "type": "expense",
   "amount": 5100,
-  "category": "Продукты",
+  "categoryId": 2,
   "description": "Покупка в супермаркете (обновлено)",
-  "date": "2026-09-02"
+  "date": "2026-09-02",
+  "status": "completed"
 }
 
-### Удалить транзакцию
-DELETE {{baseUrl}}/transactions/3
-
-### Повторное удаление уже удалённого ресурса (404)
+### Удалить
 DELETE {{baseUrl}}/transactions/3

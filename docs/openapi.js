@@ -13,12 +13,26 @@ const openapi = {
     },
   ],
   tags: [
-    {
-      name: 'Transactions',
-      description: 'CRUD финансовых операций',
-    },
+    { name: 'Transactions', description: 'CRUD финансовых операций' },
+    { name: 'Categories', description: 'Категории (1:N с транзакциями)' },
   ],
   paths: {
+    '/categories': {
+      get: {
+        tags: ['Categories'],
+        summary: 'Список категорий',
+        responses: {
+          200: {
+            description: 'Категории',
+            content: {
+              'application/json': {
+                schema: { type: 'array', items: { $ref: '#/components/schemas/Category' } },
+              },
+            },
+          },
+        },
+      },
+    },
     '/transactions': {
       get: {
         tags: ['Transactions'],
@@ -32,10 +46,16 @@ const openapi = {
             description: 'Фильтр по типу: income или expense',
           },
           {
-            name: 'category',
+            name: 'limit',
             in: 'query',
-            schema: { type: 'string', example: 'Продукты' },
-            description: 'Фильтр по категории',
+            schema: { type: 'integer', example: 10 },
+            description: 'Пагинация: сколько записей вернуть',
+          },
+          {
+            name: 'offset',
+            in: 'query',
+            schema: { type: 'integer', example: 0 },
+            description: 'Пагинация: сколько записей пропустить',
           },
         ],
         responses: {
@@ -66,9 +86,10 @@ const openapi = {
                   value: {
                     type: 'expense',
                     amount: 890,
-                    category: 'Кафе',
+                    categoryId: 4,
                     description: 'Обед в столовой',
                     date: '2026-09-08',
+                    status: 'completed',
                   },
                 },
                 income: {
@@ -76,7 +97,7 @@ const openapi = {
                   value: {
                     type: 'income',
                     amount: 15000,
-                    category: 'Фриланс',
+                    categoryId: 1,
                     description: 'Оплата за проект',
                   },
                 },
@@ -127,9 +148,10 @@ const openapi = {
               example: {
                 type: 'expense',
                 amount: 5100,
-                category: 'Продукты',
+                categoryId: 2,
                 description: 'Покупка в супермаркете (обновлено)',
                 date: '2026-09-02',
+                status: 'completed',
               },
             },
           },
@@ -182,32 +204,36 @@ const openapi = {
         type: 'string',
         enum: ['income', 'expense'],
       },
+      Category: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 2 },
+          name: { type: 'string', example: 'Продукты' },
+        },
+      },
       Transaction: {
         type: 'object',
-        required: ['id', 'type', 'amount', 'category', 'description', 'date'],
         properties: {
           id: { type: 'integer', example: 1 },
           type: { $ref: '#/components/schemas/TransactionType' },
           amount: { type: 'number', exclusiveMinimum: 0, example: 4200 },
-          category: { type: 'string', example: 'Продукты' },
           description: { type: 'string', example: 'Покупка в супермаркете' },
           date: { type: 'string', format: 'date', example: '2026-09-02' },
+          status: { type: 'string', example: 'completed' },
+          categoryId: { type: 'integer', example: 2 },
+          Category: { $ref: '#/components/schemas/Category' },
         },
       },
       TransactionInput: {
         type: 'object',
-        required: ['type', 'amount', 'category'],
+        required: ['type', 'amount', 'categoryId'],
         properties: {
           type: { $ref: '#/components/schemas/TransactionType' },
           amount: { type: 'number', exclusiveMinimum: 0, example: 890 },
-          category: { type: 'string', example: 'Кафе' },
+          categoryId: { type: 'integer', example: 4 },
           description: { type: 'string', example: 'Обед в столовой' },
-          date: {
-            type: 'string',
-            format: 'date',
-            example: '2026-09-08',
-            description: 'Если не передать, подставится сегодняшняя дата',
-          },
+          date: { type: 'string', format: 'date', example: '2026-09-08' },
+          status: { type: 'string', example: 'completed' },
         },
       },
       Error: {

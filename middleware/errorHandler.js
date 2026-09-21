@@ -19,6 +19,15 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Некорректный JSON в теле запроса' });
   }
 
+  if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeForeignKeyConstraintError') {
+    const message = err.errors?.[0]?.message || 'Неверные данные запроса';
+    return res.status(400).json({ error: message });
+  }
+
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    return res.status(400).json({ error: 'Запись с такими данными уже существует' });
+  }
+
   const status = err.status || 500;
   const message = status === 500 ? 'Внутренняя ошибка сервера' : err.message;
 

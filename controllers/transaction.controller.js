@@ -1,4 +1,4 @@
-const Transaction = require('../models/transaction.model');
+const { Transaction, Category } = require('../models');
 const { HttpError } = require('../middleware/errorHandler');
 
 function parseId(param) {
@@ -9,56 +9,46 @@ function parseId(param) {
   return id;
 }
 
-function getTransactions(req, res) {
-  const { type, category } = req.query;
-  const items = Transaction.getAll({ type, category });
+async function getTransactions(req, res) {
+  const { type, limit, offset } = req.query;
+  const items = type
+    ? await Transaction.getByType(type)
+    : await Transaction.findAll({
+        include: Category,
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
+        order: [['id', 'ASC']],
+      });
   res.status(200).json(items);
 }
 
-function getTransactionById(req, res) {
+async function getTransactionById(req, res) {
   const id = parseId(req.params.id);
-  const item = Transaction.getById(id);
-
-  if (!item) {
-    throw new HttpError(404, `Транзакция с id=${id} не найдена`);
-  }
-
+  const item = await Transaction.findByPk(id, { include: Category });
+  if (!item) throw new HttpError(404, `Транзакция с id=${id} не найдена`);
   res.status(200).json(item);
 }
 
-function createTransaction(req, res) {
-  const validationError = Transaction.validate(req.body);
-  if (validationError) {
-    throw new HttpError(400, validationError);
-  }
-
-  const item = Transaction.create(req.body);
-  res.status(201).json(item);
+async function createTransaction(req, res) {
+  const body = { ...req.body };
+  if (!body.date) body.date = new Date().toISOString().slice(0, 10);
+  const item = await Transaction.create(body);
+  const created = await Transaction.findByPk(item.id, { include: Category });
+  res.status(201).json(created);
 }
 
-function updateTransaction(req, res) {
+async function updateTransaction(req, res) {
   const id = parseId(req.params.id);
-  const validationError = Transaction.validate(req.body);
-  if (validationError) {
-    throw new HttpError(400, validationError);
-  }
-
-  const item = Transaction.update(id, req.body);
-  if (!item) {
-    throw new HttpError(404, `Транзакция с id=${id} не найдена`);
-  }
-
+  const [count] = await Transaction.update(req.body, { where: { id } });
+  if (!count) throw new HttpError(404, `Транзакция с id=${id} не найдена`);
+  const item = await Transaction.findByPk(id, { include: Category });
   res.status(200).json(item);
 }
 
-function deleteTransaction(req, res) {
+async function deleteTransaction(req, res) {
   const id = parseId(req.params.id);
-  const deleted = Transaction.remove(id);
-
-  if (!deleted) {
-    throw new HttpError(404, `Транзакция с id=${id} не найдена`);
-  }
-
+  const count = await Transaction.destroy({ where: { id } });
+  if (!count) throw new HttpError(404, `Транзакция с id=${id} не найдена`);
   res.status(200).json({ message: `Транзакция с id=${id} удалена` });
 }
 
