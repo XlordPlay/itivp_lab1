@@ -13,10 +13,60 @@ const openapi = {
     },
   ],
   tags: [
+    { name: 'Auth', description: 'Регистрация и вход' },
     { name: 'Transactions', description: 'CRUD финансовых операций' },
     { name: 'Categories', description: 'Категории (1:N с транзакциями)' },
   ],
   paths: {
+    '/auth/register': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Регистрация',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthInput' },
+              example: { email: 'user@mail.com', password: 'Secret1!' },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Пользователь создан' },
+          400: { $ref: '#/components/responses/BadRequest' },
+        },
+      },
+    },
+    '/auth/login': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Вход, выдача JWT',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthInput' },
+              example: { email: 'user@mail.com', password: 'Secret1!' },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Токен' },
+          401: { description: 'Неверные данные' },
+        },
+      },
+    },
+    '/profile': {
+      get: {
+        tags: ['Auth'],
+        summary: 'Текущий пользователь',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Профиль' },
+          401: { description: 'Нет или плохой токен' },
+        },
+      },
+    },
     '/categories': {
       get: {
         tags: ['Categories'],
@@ -36,6 +86,7 @@ const openapi = {
     '/transactions': {
       get: {
         tags: ['Transactions'],
+        security: [{ bearerAuth: [] }],
         summary: 'Список транзакций',
         description: 'Можно фильтровать через query string.',
         parameters: [
@@ -74,6 +125,7 @@ const openapi = {
       },
       post: {
         tags: ['Transactions'],
+        security: [{ bearerAuth: [] }],
         summary: 'Создать транзакцию',
         requestBody: {
           required: true,
@@ -121,6 +173,7 @@ const openapi = {
     '/transactions/{id}': {
       get: {
         tags: ['Transactions'],
+        security: [{ bearerAuth: [] }],
         summary: 'Транзакция по id',
         parameters: [{ $ref: '#/components/parameters/TransactionId' }],
         responses: {
@@ -138,6 +191,7 @@ const openapi = {
       },
       put: {
         tags: ['Transactions'],
+        security: [{ bearerAuth: [] }],
         summary: 'Полностью обновить транзакцию',
         parameters: [{ $ref: '#/components/parameters/TransactionId' }],
         requestBody: {
@@ -171,6 +225,7 @@ const openapi = {
       },
       delete: {
         tags: ['Transactions'],
+        security: [{ bearerAuth: [] }],
         summary: 'Удалить транзакцию',
         parameters: [{ $ref: '#/components/parameters/TransactionId' }],
         responses: {
@@ -190,6 +245,9 @@ const openapi = {
     },
   },
   components: {
+    securitySchemes: {
+      bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+    },
     parameters: {
       TransactionId: {
         name: 'id',
@@ -200,6 +258,14 @@ const openapi = {
       },
     },
     schemas: {
+      AuthInput: {
+        type: 'object',
+        required: ['email', 'password'],
+        properties: {
+          email: { type: 'string', example: 'user@mail.com' },
+          password: { type: 'string', example: 'Secret1!' },
+        },
+      },
       TransactionType: {
         type: 'string',
         enum: ['income', 'expense'],

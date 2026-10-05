@@ -1,53 +1,43 @@
 @baseUrl = http://localhost:3000
+@token = вставьте_токен_из_login
 
-### Категории
-GET {{baseUrl}}/categories
+### Слабый пароль (400)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
 
-### Список транзакций
+{
+  "email": "user@mail.com",
+  "password": "123"
+}
+
+### Регистрация
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@mail.com",
+  "password": "Secret1!"
+}
+
+### Вход
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@mail.com",
+  "password": "Secret1!"
+}
+
+### Профиль без токена (401)
+GET {{baseUrl}}/profile
+
+### Профиль с токеном
+GET {{baseUrl}}/profile
+Authorization: Bearer {{token}}
+
+### Транзакции без токена (401)
 GET {{baseUrl}}/transactions
 
-### Фильтр + пагинация
-GET {{baseUrl}}/transactions?type=expense&limit=10&offset=0
-
-### Одна транзакция
-GET {{baseUrl}}/transactions/1
-
-### 404
-GET {{baseUrl}}/transactions/999
-
-### Создать
-POST {{baseUrl}}/transactions
-Content-Type: application/json
-
-{
-  "type": "expense",
-  "amount": 890,
-  "categoryId": 4,
-  "description": "Обед в столовой",
-  "date": "2026-09-08"
-}
-
-### 400
-POST {{baseUrl}}/transactions
-Content-Type: application/json
-
-{
-  "type": "gift",
-  "amount": -10
-}
-
-### Обновить
-PUT {{baseUrl}}/transactions/2
-Content-Type: application/json
-
-{
-  "type": "expense",
-  "amount": 5100,
-  "categoryId": 2,
-  "description": "Покупка в супермаркете (обновлено)",
-  "date": "2026-09-02",
-  "status": "completed"
-}
-
-### Удалить
-DELETE {{baseUrl}}/transactions/3
+### Транзакции с токеном
+GET {{baseUrl}}/transactions
+Authorization: Bearer {{token}}

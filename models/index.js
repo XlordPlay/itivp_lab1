@@ -10,6 +10,7 @@ const db = {
   Sequelize,
   Category: require('./category')(sequelize),
   Transaction: require('./transaction')(sequelize),
+  User: require('./user')(sequelize),
 };
 
 db.Category.hasMany(db.Transaction, { foreignKey: 'categoryId' });
