@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Transaction, Category } = require('../models');
 const { HttpError } = require('../middleware/errorHandler');
 
@@ -10,15 +11,28 @@ function parseId(param) {
 }
 
 async function getTransactions(req, res) {
-  const { type, limit, offset } = req.query;
-  const items = type
-    ? await Transaction.getByType(type)
-    : await Transaction.findAll({
-        include: Category,
-        limit: limit ? Number(limit) : undefined,
-        offset: offset ? Number(offset) : undefined,
-        order: [['id', 'ASC']],
-      });
+  const { type, limit, offset, search } = req.query;
+  if (type) {
+    res.status(200).json(await Transaction.getByType(type));
+    return;
+  }
+
+  const where = {};
+  if (search && search.trim()) {
+    const pattern = `%${search.trim()}%`;
+    where[Op.or] = [
+      { description: { [Op.iLike]: pattern } },
+      { '$Category.name$': { [Op.iLike]: pattern } },
+    ];
+  }
+
+  const items = await Transaction.findAll({
+    where,
+    include: Category,
+    limit: limit ? Number(limit) : undefined,
+    offset: offset ? Number(offset) : undefined,
+    order: [['id', 'ASC']],
+  });
   res.status(200).json(items);
 }
 

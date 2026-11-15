@@ -108,6 +108,12 @@ const openapi = {
             schema: { type: 'integer', example: 0 },
             description: 'Пагинация: сколько записей пропустить',
           },
+          {
+            name: 'search',
+            in: 'query',
+            schema: { type: 'string', example: 'кафе' },
+            description: 'Поиск по описанию и названию категории (без учета регистра)',
+          },
         ],
         responses: {
           200: {

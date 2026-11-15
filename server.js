@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const { sequelize } = require('./models');
 const transactionRoutes = require('./routes/transaction.routes');
@@ -13,6 +14,8 @@ const openapi = require('./docs/openapi');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// React-клиент работает на другом порту (5173), поэтому браузеру нужен CORS
+app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
