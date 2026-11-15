@@ -1,0 +1,8 @@
+node_modules
+client
+.git
+.env
+*.docx
+*.pdf
+*.md
+!README.md

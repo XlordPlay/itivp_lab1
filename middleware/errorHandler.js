@@ -28,6 +28,20 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Запись с такими данными уже существует' });
   }
 
+  // Ошибки Mongoose: валидация схемы, неверный тип/ObjectId, дубликат уникального индекса
+  if (err.name === 'ValidationError') {
+    const message = Object.values(err.errors || {})[0]?.message || 'Неверные данные запроса';
+    return res.status(400).json({ error: message });
+  }
+
+  if (err.name === 'CastError') {
+    return res.status(400).json({ error: `Некорректное значение поля ${err.path}` });
+  }
+
+  if (err.code === 11000) {
+    return res.status(400).json({ error: 'Запись с такими данными уже существует' });
+  }
+
   const status = err.status || 500;
   const message = status === 500 ? 'Внутренняя ошибка сервера' : err.message;
 

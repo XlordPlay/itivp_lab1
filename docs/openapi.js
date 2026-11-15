@@ -346,4 +346,11 @@ const openapi = {
   },
 };
 
+// ЛР6: маршруты MongoDB и ИИ-ассистента
+const mongoDocs = require('./openapi.mongo');
+
+Object.assign(openapi.paths, mongoDocs.paths);
+Object.assign(openapi.components.schemas, mongoDocs.schemas);
+openapi.tags.push(...mongoDocs.tags);
+
 module.exports = openapi;

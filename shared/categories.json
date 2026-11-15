@@ -1,0 +1,24 @@
+{
+  "expense": [
+    { "name": "Продукты", "icon": "shopping-cart", "slot": 3 },
+    { "name": "Кафе", "icon": "coffee", "slot": 2 },
+    { "name": "Транспорт", "icon": "bus", "slot": 1 },
+    { "name": "Жильё", "icon": "home", "slot": 7 },
+    { "name": "Связь", "icon": "smartphone", "slot": 1 },
+    { "name": "Развлечения", "icon": "film", "slot": 5 },
+    { "name": "Здоровье", "icon": "heart-pulse", "slot": 8 },
+    { "name": "Одежда", "icon": "shirt", "slot": 4 },
+    { "name": "Подписки", "icon": "repeat", "slot": 7 },
+    { "name": "Подарки", "icon": "gift", "slot": 5 },
+    { "name": "Образование", "icon": "graduation-cap", "slot": 6 },
+    { "name": "Прочее", "icon": "package", "slot": 0 }
+  ],
+  "income": [
+    { "name": "Зарплата", "icon": "briefcase", "slot": 6 },
+    { "name": "Фриланс", "icon": "laptop", "slot": 1 },
+    { "name": "Кэшбэк", "icon": "percent", "slot": 4 },
+    { "name": "Проценты", "icon": "piggy-bank", "slot": 3 },
+    { "name": "Прочее", "icon": "package", "slot": 0 }
+  ],
+  "palette": ["#898781", "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
+}

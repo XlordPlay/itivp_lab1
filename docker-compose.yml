@@ -9,6 +9,66 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d finance']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: finance
+      MONGO_INITDB_ROOT_PASSWORD: finance
+    # 27018 снаружи, чтобы не конфликтовать с другой локальной MongoDB на 27017
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://finance:finance@mongo:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH: 'false'
+    ports:
+      - '8082:8081'
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  api:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/finance
+      MONGO_URI: mongodb://finance:finance@mongo:27017/finance?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: http://localhost:3000
+    ports:
+      - '5173:80'
+    depends_on:
+      - api
 
 volumes:
   pgdata:
+  mongodata:

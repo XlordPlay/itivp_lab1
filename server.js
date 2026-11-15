@@ -6,6 +6,9 @@ const { sequelize } = require('./models');
 const transactionRoutes = require('./routes/transaction.routes');
 const categoryRoutes = require('./routes/category.routes');
 const authRoutes = require('./routes/auth');
+const mongoRoutes = require('./routes/mongo.routes');
+const aiRoutes = require('./routes/ai.routes');
+const { connectMongo } = require('./mongo/db');
 const auth = require('./middleware/auth');
 const { profile } = require('./controllers/auth.controller');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
@@ -24,6 +27,8 @@ app.get('/', (req, res) => {
     description: 'REST API системы учета личных финансов',
     resource: '/transactions',
     categories: '/categories',
+    mongo: '/mongo/transactions',
+    assistant: '/ai/chat',
     docs: '/docs',
   });
 });
@@ -38,10 +43,14 @@ app.get('/profile', auth, profile);
 app.use('/categories', categoryRoutes);
 app.use('/transactions', auth, transactionRoutes);
 
+// ЛР6: те же финансовые данные в MongoDB (Mongoose) и ИИ-ассистент поверх них
+app.use('/mongo', auth, mongoRoutes);
+app.use('/ai', auth, aiRoutes);
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-sequelize.authenticate().then(() => {
+Promise.all([sequelize.authenticate(), connectMongo()]).then(() => {
   app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
   });
