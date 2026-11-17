@@ -1,12 +1,12 @@
 const { Account } = require('../mongo/models');
 const { catalog } = require('../mongo/categories');
 const services = require('../mongo/services');
+const { notifyUser } = require('../realtime/notify');
 
 const expenseNames = catalog.expense.map((c) => c.name);
 const incomeNames = catalog.income.map((c) => c.name);
 const monthParam = { type: 'string', description: 'Месяц в формате YYYY-MM' };
 
-// Описание инструментов в формате OpenAI function calling (его понимает OpenRouter)
 const definitions = [
   {
     name: 'list_transactions',
@@ -88,7 +88,6 @@ function compact(t) {
   };
 }
 
-// Реализация инструментов: всегда в рамках данных текущего пользователя
 const handlers = {
   async list_transactions(userId, args) {
     const items = await services.listTransactions(userId, { ...args, limit: Math.min(args.limit || 20, 50) });
@@ -99,7 +98,6 @@ const handlers = {
     const accounts = await services.listAccounts(userId);
     return accounts.map((a) => ({ id: String(a._id), name: a.name, kind: a.kind, balance: a.balance }));
   },
-  // Остаток, процент и статус считаем здесь, чтобы модели не приходилось считать самой
   async get_budget(userId, args) {
     const budget = await services.getBudget(userId, args.month);
     return {
@@ -117,7 +115,7 @@ const handlers = {
       }),
     };
   },
-  async add_transaction(userId, args) {
+  async add_transaction(userId, args, socketId) {
     let account;
     if (args.account) {
       const re = new RegExp(args.account.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
@@ -129,12 +127,12 @@ const handlers = {
       date: args.date || services.today(),
       account: account?._id ? String(account._id) : undefined,
     });
+    notifyUser(userId, 'transaction:changed', { action: 'created', transaction: created }, socketId);
     return { created: compact(created) };
   },
   set_budget_limit: (userId, args) => services.setBudgetLimit(userId, args.month, args.category, args.limit),
 };
 
-// Что агент сделал: показываем в интерфейсе как карточки действий
 function describeAction(name, args, result) {
   if (name === 'add_transaction' && result.created) {
     const t = result.created;

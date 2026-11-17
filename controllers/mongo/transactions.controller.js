@@ -1,5 +1,6 @@
 const { Transaction } = require('../../mongo/models');
 const { HttpError } = require('../../middleware/errorHandler');
+const { notifyUser } = require('../../realtime/notify');
 const {
   objectId,
   normalizeTags,
@@ -11,46 +12,47 @@ const {
 
 const ACCOUNT_FIELDS = 'name kind slot';
 
-// GET /mongo/transactions -> Model.find()
+function broadcast(req, action, transaction) {
+  notifyUser(req.user.id, 'transaction:changed', { action, transaction }, req.get('x-socket-id'));
+}
+
 async function list(req, res) {
   res.json(await listTransactions(req.user.id, req.query));
 }
 
-// GET /mongo/transactions/:id -> Model.findById()
 async function getOne(req, res) {
   const item = await findOwnTransaction(req.user.id, req.params.id);
   res.json(await item.populate('account', ACCOUNT_FIELDS));
 }
 
-// POST /mongo/transactions -> Model.create()
 async function create(req, res) {
-  res.status(201).json(await createTransaction(req.user.id, req.body || {}));
+  const created = await createTransaction(req.user.id, req.body || {});
+  broadcast(req, 'created', created);
+  res.status(201).json(created);
 }
 
-// PUT /mongo/transactions/:id -> Model.findByIdAndUpdate(id, body, { new: true })
 async function update(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   const data = await buildPayload(req.user.id, req.body || {}, true);
   const item = await Transaction.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true })
     .populate('account', ACCOUNT_FIELDS);
+  broadcast(req, 'updated', item);
   res.json(item);
 }
 
-// DELETE /mongo/transactions/:id -> Model.findByIdAndDelete(), возвращает удаленный документ
 async function remove(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   const deleted = await Transaction.findByIdAndDelete(req.params.id);
+  broadcast(req, 'deleted', deleted);
   res.json({ message: 'Операция удалена', deleted });
 }
 
-// После изменения позиций пересчитываем сумму (метод экземпляра recalcAmount)
 async function saveWithTotal(doc) {
   doc.recalcAmount();
   await doc.save();
   return doc.populate('account', ACCOUNT_FIELDS);
 }
 
-// POST /mongo/transactions/:id/items -> $push позиции в массив
 async function addItem(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   const { name, qty = 1, price } = req.body || {};
@@ -62,8 +64,6 @@ async function addItem(req, res) {
   res.status(201).json(await saveWithTotal(doc));
 }
 
-// PATCH /mongo/transactions/:id/items/:itemId
-// { delta: 1 } -> $inc по позиционному оператору items.$.qty; иначе $set полей позиции
 async function updateItem(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   objectId(req.params.itemId, 'id позиции');
@@ -93,7 +93,6 @@ async function updateItem(req, res) {
   res.json(await saveWithTotal(await Transaction.findById(req.params.id)));
 }
 
-// DELETE /mongo/transactions/:id/items/:itemId -> $pull
 async function removeItem(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   objectId(req.params.itemId, 'id позиции');
@@ -105,7 +104,6 @@ async function removeItem(req, res) {
   res.json(await saveWithTotal(doc));
 }
 
-// POST /mongo/transactions/:id/tags -> $addToSet (без дублей)
 async function addTag(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   const [tag] = normalizeTags([req.body?.tag]);
@@ -115,7 +113,6 @@ async function addTag(req, res) {
   res.json(doc);
 }
 
-// DELETE /mongo/transactions/:id/tags/:tag -> $pull
 async function removeTag(req, res) {
   await findOwnTransaction(req.user.id, req.params.id);
   const doc = await Transaction.findByIdAndUpdate(

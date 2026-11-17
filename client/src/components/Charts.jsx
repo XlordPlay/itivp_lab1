@@ -24,7 +24,6 @@ function CashflowTip({ active, payload, label, monthText }) {
   );
 }
 
-// Доходы и расходы месяца накопленным итогом: одна ось, две серии, подсказка по наведению
 export function CashflowChart({ daily, monthGenitive, lastDay }) {
   const { theme } = useApp();
   const c = theme.chart;
@@ -81,7 +80,6 @@ export function CashflowChart({ daily, monthGenitive, lastDay }) {
   );
 }
 
-// Расходы по категориям: ранжированные полосы одного цвета (категория — подписью и иконкой)
 export function CategoryBars({ rows, total, limit = 6 }) {
   const head = rows.slice(0, limit);
   const rest = rows.slice(limit).reduce((s, r) => s + r.total, 0);
@@ -110,7 +108,6 @@ export function CategoryBars({ rows, total, limit = 6 }) {
   );
 }
 
-// Мини-столбики расходов по дням для плитки «В среднем в день»
 export function DailyBars({ daily, lastDay }) {
   const days = daily.filter((d) => !lastDay || d.day <= lastDay);
   const max = Math.max(...days.map((d) => d.expense), 1);

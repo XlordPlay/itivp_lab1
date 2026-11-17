@@ -28,7 +28,6 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Запись с такими данными уже существует' });
   }
 
-  // Ошибки Mongoose: валидация схемы, неверный тип/ObjectId, дубликат уникального индекса
   if (err.name === 'ValidationError') {
     const message = Object.values(err.errors || {})[0]?.message || 'Неверные данные запроса';
     return res.status(400).json({ error: message });

@@ -1,6 +1,5 @@
 const { Schema, model } = require('mongoose');
 
-// Вложенный документ без отдельной коллекции: снимок категории на момент операции
 const categorySchema = new Schema(
   {
     name: { type: String, required: true },
@@ -10,7 +9,6 @@ const categorySchema = new Schema(
   { _id: false },
 );
 
-// Позиция чека. У каждой позиции свой _id, чтобы обновлять ее внутри массива
 const itemSchema = new Schema({
   name: { type: String, required: [true, 'Название позиции обязательно'], trim: true, maxlength: 60 },
   qty: { type: Number, default: 1, min: [1, 'Количество не меньше 1'] },
@@ -28,7 +26,7 @@ const transactionSchema = new Schema(
     category: { type: categorySchema, required: true },
     tags: { type: [String], default: [] },
     items: { type: [itemSchema], default: [] },
-    legacyId: Number, // id этой же операции в PostgreSQL (для сравнения моделей)
+    legacyId: Number,
   },
   { timestamps: true },
 );
@@ -36,7 +34,6 @@ const transactionSchema = new Schema(
 transactionSchema.index({ userId: 1, date: -1 });
 transactionSchema.index({ tags: 1 });
 
-// Метод экземпляра: если есть позиции чека, сумма операции равна их сумме
 transactionSchema.methods.recalcAmount = function () {
   if (this.items.length) {
     const total = this.items.reduce((sum, item) => sum + item.qty * item.price, 0);
@@ -49,7 +46,6 @@ transactionSchema.pre('validate', function () {
   this.recalcAmount();
 });
 
-// Статический метод: итоги месяца через aggregation pipeline
 transactionSchema.statics.monthTotals = function (userId, from, to) {
   return this.aggregate([
     { $match: { userId, date: { $gte: from, $lt: to } } },
@@ -58,7 +54,6 @@ transactionSchema.statics.monthTotals = function (userId, from, to) {
 };
 
 const Transaction = model('Transaction', transactionSchema);
-// Операции, перенесенные из PostgreSQL (ЛР2): та же схема, отдельная коллекция
 const ImportedTransaction = model('ImportedTransaction', transactionSchema, 'imported_transactions');
 
 module.exports = { Transaction, ImportedTransaction };

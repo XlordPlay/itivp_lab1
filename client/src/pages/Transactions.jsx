@@ -23,7 +23,6 @@ export function Transactions() {
   const [openId, setOpenId] = useState(null);
   const debounced = useDebounce(search, 350);
 
-  // GET с фильтрами: при каждом новом фильтре предыдущий запрос отменяется (AbortController)
   const list = useResource(
     (signal) => fetchTransactions({ month, search: debounced || undefined, type: type || undefined, account: account || undefined, tag: tag || undefined }, signal),
     [month, debounced, type, account, tag, dataVersion],
@@ -50,7 +49,6 @@ export function Transactions() {
     list.setData((prev) => prev.map((tx) => (tx._id === updated._id ? updated : tx)));
   }
 
-  // DELETE с оптимистичным обновлением и откатом
   async function remove(tx) {
     const previous = list.data;
     list.setData((prev) => prev.filter((t) => t._id !== tx._id));

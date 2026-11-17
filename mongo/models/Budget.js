@@ -8,7 +8,6 @@ const limitSchema = new Schema(
   { _id: false },
 );
 
-// Бюджет месяца: один документ с массивом лимитов по категориям
 const budgetSchema = new Schema(
   {
     userId: { type: Number, required: true },

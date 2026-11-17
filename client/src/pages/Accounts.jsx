@@ -29,7 +29,6 @@ function AccountCard({ account }) {
     }
   }
 
-  // Каскадное удаление: сервер удаляет счёт и все его операции
   async function remove() {
     setBusy(true);
     try {

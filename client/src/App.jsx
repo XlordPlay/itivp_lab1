@@ -5,6 +5,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   LogOut,
+  MessagesSquare,
   Moon,
   Plus,
   Sparkles,
@@ -17,10 +18,12 @@ import { fetchAccounts, fetchCategories, LOGOUT_EVENT } from './api';
 import { Assistant } from './components/Assistant';
 import { TransactionEditor } from './components/TransactionEditor';
 import { AppProvider } from './context';
+import { RealtimeProvider, useRealtime } from './realtime';
 import { currentMonth, monthLabel, shiftMonth } from './lib/format';
 import { useTheme } from './lib/theme';
 import { Accounts } from './pages/Accounts';
 import { Budget } from './pages/Budget';
+import { Chat } from './pages/Chat';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 import { Transactions } from './pages/Transactions';
@@ -30,6 +33,7 @@ const ROUTES = {
   transactions: { title: 'Операции', Icon: ArrowLeftRight, Page: Transactions, month: true },
   accounts: { title: 'Счета', Icon: Wallet, Page: Accounts },
   budget: { title: 'Бюджет', Icon: Target, Page: Budget, month: true },
+  chat: { title: 'Чат', Icon: MessagesSquare, Page: Chat },
   assistant: { title: 'Ассистент', Icon: Sparkles },
 };
 
@@ -44,13 +48,27 @@ function useHashRoute() {
   return route;
 }
 
-function Workspace({ email, onLogout, theme }) {
+function ChatBadge() {
+  const { totalUnread } = useRealtime();
+  return totalUnread > 0 ? <span className="nav-badge alert num">{totalUnread}</span> : null;
+}
+
+function ConnectionLine() {
+  const { status } = useRealtime();
+  return (
+    <span className="connection" data-status={status}>
+      <i /> {status === 'online' ? 'Онлайн · Socket.IO' : status === 'connecting' ? 'Подключение…' : 'Переподключение…'}
+    </span>
+  );
+}
+
+function Workspace({ email, token, onLogout, theme }) {
   const route = useHashRoute();
   const [month, setMonth] = useState(currentMonth);
   const [catalog, setCatalog] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [dataVersion, setDataVersion] = useState(0);
-  const [editor, setEditor] = useState(null); // { tx } | null
+  const [editor, setEditor] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
 
   const reloadAccounts = useCallback(() => {
@@ -87,6 +105,7 @@ function Workspace({ email, onLogout, theme }) {
 
   return (
     <AppProvider value={value}>
+      <RealtimeProvider token={token} route={route}>
       <div className="shell">
         <aside className="rail">
           <div className="brand">
@@ -99,6 +118,7 @@ function Workspace({ email, onLogout, theme }) {
                 <r.Icon size={18} />
                 {r.title}
                 {key === 'assistant' && <span className="nav-badge">ИИ</span>}
+                {key === 'chat' && <ChatBadge />}
               </a>
             ))}
           </nav>
@@ -109,7 +129,7 @@ function Workspace({ email, onLogout, theme }) {
                 <LogOut size={15} />
               </button>
             </div>
-            <span className="muted" style={{ fontSize: 12 }}>Данные: MongoDB · вход: PostgreSQL</span>
+            <ConnectionLine />
           </div>
         </aside>
 
@@ -136,7 +156,7 @@ function Workspace({ email, onLogout, theme }) {
             </button>
           </header>
 
-          <main className="content" style={route === 'assistant' ? { flex: 1, minHeight: 0 } : undefined}>
+          <main className="content" style={route === 'assistant' ? { flex: 1, minHeight: 0 } : route === 'chat' ? { paddingBottom: 24 } : undefined}>
             {route === 'assistant' ? (
               <section className="card" style={{ padding: 0, flex: 1, minHeight: 'calc(100vh - 120px)' }}>
                 <Assistant />
@@ -148,7 +168,7 @@ function Workspace({ email, onLogout, theme }) {
         </div>
       </div>
 
-      {route !== 'assistant' && !chatOpen && (
+      {route !== 'assistant' && route !== 'chat' && !chatOpen && (
         <button type="button" className="btn btn-primary fab" onClick={() => setChatOpen(true)}>
           <Sparkles size={18} /> <span>Спросить ассистента</span>
         </button>
@@ -170,6 +190,7 @@ function Workspace({ email, onLogout, theme }) {
       )}
 
       {editor && <TransactionEditor key={editor.tx?._id || 'new'} tx={editor.tx} onClose={() => setEditor(null)} />}
+      </RealtimeProvider>
     </AppProvider>
   );
 }
@@ -179,7 +200,6 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [email, setEmail] = useState(() => localStorage.getItem('email') || '');
 
-  // api.js сообщает о 401 — возвращаемся к форме входа
   useEffect(() => {
     const onLogout = () => setToken(null);
     window.addEventListener(LOGOUT_EVENT, onLogout);
@@ -202,5 +222,5 @@ export default function App() {
       />
     );
   }
-  return <Workspace email={email} onLogout={logout} theme={theme} />;
+  return <Workspace email={email} token={token} onLogout={logout} theme={theme} />;
 }

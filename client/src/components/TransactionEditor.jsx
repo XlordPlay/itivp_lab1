@@ -33,7 +33,6 @@ function fromTransaction(tx) {
 
 const toNumber = (v) => Number(String(v).replace(',', '.'));
 
-// Выезжающая панель добавления и редактирования операции
 export function TransactionEditor({ tx, onClose }) {
   const { catalog, accounts, toast, bumpData } = useApp();
   const [form, setForm] = useState(() => (tx ? fromTransaction(tx) : emptyForm(accounts)));

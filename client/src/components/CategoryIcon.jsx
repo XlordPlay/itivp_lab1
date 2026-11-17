@@ -37,7 +37,6 @@ const ICONS = {
   smartphone: Smartphone,
 };
 
-// Плитка категории: иконка и цвет по слоту палитры (цвет меняется вместе с темой)
 export function CategoryIcon({ name, type, icon, small = false }) {
   const { categoryMeta } = useApp();
   const meta = categoryMeta(name, type);

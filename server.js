@@ -1,4 +1,5 @@
 require('dotenv').config();
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
@@ -9,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const mongoRoutes = require('./routes/mongo.routes');
 const aiRoutes = require('./routes/ai.routes');
 const { connectMongo } = require('./mongo/db');
+const { attachRealtime } = require('./realtime');
 const auth = require('./middleware/auth');
 const { profile } = require('./controllers/auth.controller');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
@@ -17,7 +19,6 @@ const openapi = require('./docs/openapi');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// React-клиент работает на другом порту (5173), поэтому браузеру нужен CORS
 app.use(cors());
 app.use(express.json());
 
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
     categories: '/categories',
     mongo: '/mongo/transactions',
     assistant: '/ai/chat',
+    realtime: 'Socket.IO на том же порту',
     docs: '/docs',
   });
 });
@@ -43,15 +45,17 @@ app.get('/profile', auth, profile);
 app.use('/categories', categoryRoutes);
 app.use('/transactions', auth, transactionRoutes);
 
-// ЛР6: те же финансовые данные в MongoDB (Mongoose) и ИИ-ассистент поверх них
 app.use('/mongo', auth, mongoRoutes);
 app.use('/ai', auth, aiRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+const server = http.createServer(app);
+attachRealtime(server);
+
 Promise.all([sequelize.authenticate(), connectMongo()]).then(() => {
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
   });
 }).catch((err) => {

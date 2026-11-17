@@ -10,7 +10,6 @@ function objectId(value, label = 'id') {
   return value;
 }
 
-// «Сегодня» по часовому поясу пользователя (по умолчанию Минск), а не по UTC
 function today() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: process.env.TZ_USER || 'Europe/Minsk' }).format(new Date());
 }
@@ -19,7 +18,6 @@ function currentMonth() {
   return today().slice(0, 7);
 }
 
-// Границы месяца [from, to) в UTC
 function monthRange(month = currentMonth()) {
   if (!MONTH_RE.test(month)) throw new HttpError(400, 'Месяц в формате ГГГГ-ММ');
   const [y, m] = month.split('-').map(Number);
@@ -32,7 +30,6 @@ function shiftMonth(month, delta) {
   return d.toISOString().slice(0, 7);
 }
 
-// Дата операции хранится как полдень UTC выбранного дня, чтобы не зависеть от часового пояса
 function parseDate(value) {
   if (!value) return undefined;
   const day = String(value).slice(0, 10);
@@ -50,7 +47,6 @@ function round2(n) {
   return Math.round(n * 100) / 100;
 }
 
-// Приводит тело запроса к полям документа. partial = true для обновления
 async function buildPayload(userId, body, partial = false) {
   const data = {};
   const type = body.type ?? (partial ? undefined : 'expense');
@@ -90,13 +86,12 @@ async function findOwnTransaction(userId, id) {
   return item;
 }
 
-// Список операций: фильтры и пагинация через цепочку Query
 async function listTransactions(userId, query = {}) {
   const q = Transaction.find({ userId });
   if (query.type) q.where('type').equals(query.type);
   if (query.account) q.where('account').equals(objectId(query.account, 'id счета'));
-  if (query.tag) q.where('tags').equals(String(query.tag).toLowerCase()); // поле-массив содержит значение
-  if (query.category) q.where('category.name').equals(query.category); // поиск по вложенному полю
+  if (query.tag) q.where('tags').equals(String(query.tag).toLowerCase());
+  if (query.category) q.where('category.name').equals(query.category);
   if (query.month) {
     const { from, to } = monthRange(query.month);
     q.where('date').gte(from).lt(to);
@@ -116,7 +111,6 @@ async function createTransaction(userId, body) {
   return created.populate('account', 'name kind slot');
 }
 
-// Итоги месяца, разбивка по категориям, по дням и по тегам
 async function monthStats(userId, month = currentMonth()) {
   const { from, to, days } = monthRange(month);
   const match = { userId, date: { $gte: from, $lt: to } };
@@ -162,7 +156,6 @@ async function monthStats(userId, month = currentMonth()) {
   };
 }
 
-// Счета с балансами (aggregation по операциям)
 async function listAccounts(userId) {
   const [accounts, sums] = await Promise.all([
     Account.find({ userId }).sort({ createdAt: 1 }).lean(),
@@ -184,7 +177,6 @@ async function listAccounts(userId) {
   });
 }
 
-// Бюджет месяца с фактическими расходами по каждой категории
 async function getBudget(userId, month = currentMonth()) {
   const { from, to } = monthRange(month);
   const [budget, spent] = await Promise.all([
@@ -201,7 +193,6 @@ async function getBudget(userId, month = currentMonth()) {
   return { month, _id: budget?._id, limits };
 }
 
-// Обновление элемента массива через arrayFilters, либо добавление нового элемента
 async function setBudgetLimit(userId, month, category, limit) {
   monthRange(month);
   const value = Number(limit);

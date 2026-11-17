@@ -6,13 +6,11 @@ import { money, shortDate } from '../lib/format';
 
 const total = (items) => Math.round(items.reduce((s, i) => s + i.qty * i.price, 0) * 100) / 100;
 
-// Позиции операции в виде кассового чека. Количество меняется через $inc по элементу массива
 export function Receipt({ tx, onChange }) {
   const { toast } = useApp();
   const [draft, setDraft] = useState({ name: '', price: '' });
   const [busy, setBusy] = useState(false);
 
-  // Оптимистично меняем позиции, при ошибке возвращаем прежний документ
   async function apply(optimisticItems, request) {
     const previous = tx;
     onChange({ ...tx, items: optimisticItems, amount: optimisticItems.length ? total(optimisticItems) : tx.amount });

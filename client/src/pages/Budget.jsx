@@ -37,7 +37,6 @@ export function Budget() {
   const over = limits.filter((l) => budgetStatus(l.spent, l.limit).key === 'critical').length;
   const status = budgetStatus(totalSpent, totalLimit);
 
-  // PATCH лимита: на сервере — обновление элемента массива через arrayFilters
   async function save(category, value) {
     if (!(value >= 0)) return toast('Лимит должен быть числом не меньше 0', 'error');
     try {

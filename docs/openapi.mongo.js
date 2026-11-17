@@ -1,4 +1,3 @@
-// Документация маршрутов ЛР6: MongoDB (Mongoose) и ИИ-ассистент
 const security = [{ bearerAuth: [] }];
 const json = (schema, example) => ({ content: { 'application/json': { schema, ...(example && { example }) } } });
 const ok = (description, schema) => ({ description, ...json(schema || { type: 'object' }) });

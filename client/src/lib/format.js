@@ -1,7 +1,6 @@
 const money2 = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money0 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
 
-// 1 234,50 Br
 export function money(value, { sign = false, round = false } = {}) {
   const n = Number(value) || 0;
   const text = (round ? money0 : money2).format(Math.abs(n));
@@ -13,7 +12,6 @@ export function capitalize(s) {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-// Локальная дата браузера в формате YYYY-MM-DD (toISOString дал бы дату по UTC)
 export function isoDay(date = new Date()) {
   const d = new Date(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -31,25 +29,21 @@ export function shiftMonth(month, delta) {
 const monthName = new Intl.DateTimeFormat('ru-RU', { month: 'long', timeZone: 'UTC' });
 const monthGenitive = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 
-// «Ноябрь 2026»
 export function monthLabel(month) {
   const date = new Date(`${month}-01T12:00:00Z`);
   return `${capitalize(monthName.format(date))} ${month.slice(0, 4)}`;
 }
 
-// «ноября» — для фраз «за ноябрь» используем monthLabel, для дат — родительный падеж
 export function monthShort(month) {
   return capitalize(monthName.format(new Date(`${month}-01T12:00:00Z`)));
 }
 
 const dayHeader = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
-// «Пятница, 13 ноября»
 export function dayLabel(iso) {
   return capitalize(dayHeader.format(new Date(iso)));
 }
 
-// «13 ноября»
 export function shortDate(iso) {
   return monthGenitive.format(new Date(iso));
 }

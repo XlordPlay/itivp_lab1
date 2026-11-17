@@ -346,7 +346,6 @@ const openapi = {
   },
 };
 
-// ЛР6: маршруты MongoDB и ИИ-ассистента
 const mongoDocs = require('./openapi.mongo');
 
 Object.assign(openapi.paths, mongoDocs.paths);

@@ -6,18 +6,22 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Каждый запрос получает JWT из localStorage
+let socketId = null;
+
+export function setSocketId(id) {
+  socketId = id;
+}
+
 api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (socketId) config.headers['X-Socket-Id'] = socketId;
 
-  // Искусственная задержка, чтобы увидеть состояния загрузки (VITE_API_DELAY в .env)
   const delay = Number(import.meta.env.VITE_API_DELAY) || 0;
   if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
   return config;
 });
 
-// Токен истек или неверный: выходим из аккаунта
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -34,7 +38,6 @@ const data = (request) => request.then((response) => response.data);
 export const login = (email, password) => data(api.post('/auth/login', { email, password }));
 export const register = (email, password) => data(api.post('/auth/register', { email, password }));
 
-// MongoDB: операции, вложенные позиции и теги
 export const fetchCategories = () => data(api.get('/mongo/categories'));
 export const fetchStats = (month, signal) => data(api.get('/mongo/stats', { params: { month }, signal }));
 export const fetchTransactions = (params, signal) => data(api.get('/mongo/transactions', { params, signal }));
@@ -56,13 +59,11 @@ export const setLimit = (month, category, limit) =>
 export const deleteLimit = (month, category) =>
   data(api.delete(`/mongo/budgets/${month}/limits/${encodeURIComponent(category)}`));
 
-// ИИ-ассистент
 export const fetchAiStatus = () => data(api.get('/ai/status'));
 export const askAssistant = (messages) => data(api.post('/ai/chat', { messages }));
 
 export const isCanceled = (error) => axios.isCancel(error);
 
-// Текст ошибки для пользователя: ответ сервера, сеть или что-то еще
 export function getErrorMessage(error) {
   if (error.response) {
     return error.response.data?.error || `Ошибка сервера (${error.response.status})`;

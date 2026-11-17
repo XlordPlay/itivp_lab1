@@ -9,7 +9,6 @@ export function budgetStatus(spent, limit) {
   return { key: 'good', label: 'В пределах', Icon: CircleCheck, ratio };
 }
 
-// Строка бюджета: статус передается цветом, иконкой и подписью одновременно
 export function BudgetRow({ limit, children }) {
   const status = budgetStatus(limit.spent, limit.limit);
   const left = limit.limit - limit.spent;

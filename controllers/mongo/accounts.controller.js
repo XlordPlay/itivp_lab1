@@ -31,7 +31,6 @@ async function update(req, res) {
   res.json(withBalance);
 }
 
-// Каскадное удаление выполняет pre-hook findOneAndDelete в модели Account
 async function remove(req, res) {
   objectId(req.params.id);
   const removedTransactions = await Transaction.countDocuments({ account: req.params.id, userId: req.user.id });

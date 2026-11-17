@@ -44,8 +44,7 @@ async function callModel(messages) {
   return message;
 }
 
-// Цикл агента: модель вызывает инструменты, пока не даст финальный ответ
-async function runAgent(userId, history) {
+async function runAgent(userId, history, socketId) {
   if (!process.env.OPENROUTER_API_KEY) {
     throw new HttpError(503, 'Ассистент не настроен: добавьте OPENROUTER_API_KEY в .env и перезапустите сервер');
   }
@@ -65,7 +64,7 @@ async function runAgent(userId, history) {
       try {
         const args = JSON.parse(call.function?.arguments || '{}');
         if (!handlers[name]) throw new Error(`Неизвестный инструмент ${name}`);
-        result = await handlers[name](userId, args);
+        result = await handlers[name](userId, args, socketId);
         const action = describeAction(name, args, result);
         if (action) actions.push(action);
       } catch (err) {

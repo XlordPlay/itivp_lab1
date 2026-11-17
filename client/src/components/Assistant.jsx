@@ -11,7 +11,6 @@ const SUGGESTIONS = [
   'Сравни расходы с прошлым месяцем',
 ];
 
-// Модель иногда размечает ответ **жирным** — показываем это без сторонних библиотек
 function RichText({ text }) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
     part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b> : part,
@@ -26,7 +25,6 @@ function loadHistory() {
   }
 }
 
-// Чат с ИИ-агентом: агент читает данные из MongoDB и может добавлять операции
 export function Assistant() {
   const { bumpData } = useApp();
   const [messages, setMessages] = useState(loadHistory);
@@ -43,7 +41,6 @@ export function Assistant() {
     try {
       localStorage.setItem(KEY, JSON.stringify(messages.slice(-30)));
     } catch {
-      // не страшно, история просто не сохранится
     }
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, thinking]);

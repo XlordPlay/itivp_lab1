@@ -17,7 +17,6 @@ async function budget(req, res) {
   res.json(await getBudget(req.user.id, req.params.month));
 }
 
-// PUT /mongo/budgets/:month -> заменить весь массив лимитов (upsert)
 async function replaceBudget(req, res) {
   const limits = (req.body?.limits || []).map((l) => ({ category: l.category, limit: Number(l.limit) }));
   await Budget.findOneAndUpdate(
@@ -28,12 +27,10 @@ async function replaceBudget(req, res) {
   res.json(await getBudget(req.user.id, req.params.month));
 }
 
-// PATCH /mongo/budgets/:month/limits/:category -> обновить элемент массива (arrayFilters)
 async function patchLimit(req, res) {
   res.json(await setBudgetLimit(req.user.id, req.params.month, req.params.category, req.body?.limit));
 }
 
-// DELETE /mongo/budgets/:month/limits/:category -> $pull
 async function removeLimit(req, res) {
   await Budget.updateOne(
     { userId: req.user.id, month: req.params.month },
@@ -42,7 +39,6 @@ async function removeLimit(req, res) {
   res.json(await getBudget(req.user.id, req.params.month));
 }
 
-// GET /mongo/compare/:legacyId -> одна и та же операция в PostgreSQL (строки JOIN) и в MongoDB (документ)
 async function compare(req, res) {
   const legacyId = Number(req.params.legacyId);
   if (!Number.isInteger(legacyId)) throw new HttpError(400, 'legacyId должен быть целым числом');

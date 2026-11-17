@@ -20,7 +20,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: finance
       MONGO_INITDB_ROOT_PASSWORD: finance
-    # 27018 снаружи, чтобы не конфликтовать с другой локальной MongoDB на 27017
     ports:
       - '27018:27017'
     volumes:

@@ -1,17 +1,16 @@
-// Наполняет MongoDB демо-данными для пользователя student@finance.by.
-// Запуск: node scripts/seed-mongo.js [--if-empty] [--reset]
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { sequelize, User, Category, Transaction: PgTransaction } = require('../models');
 const { connectMongo, mongoose } = require('../mongo/db');
-const { Account, Transaction, ImportedTransaction, Budget } = require('../mongo/models');
+const { Account, Transaction, ImportedTransaction, Budget, Message } = require('../mongo/models');
+const { displayName } = require('../realtime');
 const { categorySnapshot } = require('../mongo/categories');
 
 const DEMO = { email: 'student@finance.by', password: 'Finance2026!' };
+const PARTNER = { email: 'anna@finance.by', password: 'Finance2026!' };
 const START = '2026-09-01';
 const END = '2026-11-16';
 
-// Детерминированный генератор, чтобы данные были одинаковыми при каждом запуске
 let seed = 20261116;
 function rnd() {
   seed = (seed * 1664525 + 1013904223) % 4294967296;
@@ -39,7 +38,6 @@ async function ensurePostgres() {
     user = await User.create({ email: DEMO.email, passwordHash: await bcrypt.hash(DEMO.password, 10) });
     console.log('Создан пользователь', DEMO.email);
   }
-  // Справочник и операции ЛР2, если база PostgreSQL новая
   if ((await Category.count()) === 0) {
     const cats = await Category.bulkCreate(['Зарплата', 'Продукты', 'Транспорт', 'Кафе'].map((name) => ({ name })));
     const id = Object.fromEntries(cats.map((c) => [c.name, c.id]));
@@ -73,12 +71,9 @@ function buildTransactions(userId, acc) {
     if (day === 12) add(date, 'expense', 'Подписки', 14.9, 'Онлайн-кинотеатр', { tags: ['подписка'] });
     if (day === 28) add(date, 'income', 'Проценты', between(9, 14), 'Проценты по вкладу', { account: acc.savings });
 
-    // Утренний кофе в рабочие дни (наличными)
     if (workday && rnd() < 0.6) add(date, 'expense', 'Кафе', pick([5.5, 6, 6.5, 7.2]), pick(['Капучино', 'Латте', 'Американо']), { account: acc.cash, tags: ['кофе'] });
-    // Обед с коллегами
     if (workday && rnd() < 0.35) add(date, 'expense', 'Кафе', between(16, 32), 'Обед', { tags: ['обед', 'работа'] });
 
-    // Продукты с чеком из позиций
     if (rnd() < 0.42) {
       const count = 3 + Math.floor(rnd() * 5);
       const items = [];
@@ -113,6 +108,38 @@ function buildTransactions(userId, acc) {
   return list;
 }
 
+async function ensureUser({ email, password }) {
+  const existing = await User.findOne({ where: { email } });
+  if (existing) return existing;
+  console.log('Создан пользователь', email);
+  return User.create({ email, passwordHash: await bcrypt.hash(password, 10) });
+}
+
+async function ensureChat(student, reset) {
+  const anna = await ensureUser(PARTNER);
+  if (reset) await Message.deleteMany({});
+  else if (await Message.exists({})) return;
+  const author = (u) => ({ id: u.id, email: u.email, name: displayName(u.email) });
+  const at = (s) => new Date(`2026-11-${s}:00+03:00`);
+  const family = [
+    [anna, '15T19:02', 'Привет! Я внесла коммуналку за октябрь, 141 Br'],
+    [student, '15T19:05', 'Отлично. Тогда в ноябре по «Жилью» осталось совсем немного'],
+    [anna, '15T19:06', 'Да, лимит почти исчерпан. Давай в этом месяце без доставки еды'],
+    [student, '15T19:08', 'Договорились. Продукты беру по выходным в Евроопте, так дешевле'],
+    [anna, '16T09:41', 'Купила подарок маме, 85 Br, запишешь в «Подарки»?'],
+  ];
+  const vacation = [
+    [student, '14T21:10', 'Перевёл 200 Br в копилку'],
+    [anna, '14T21:12', 'Супер! Уже 1 525 Br из 3 000'],
+  ];
+  const docs = [
+    ...family.map(([u, time, text]) => ({ room: 'family', from: author(u), text, createdAt: at(time), updatedAt: at(time) })),
+    ...vacation.map(([u, time, text]) => ({ room: 'vacation', from: author(u), text, createdAt: at(time), updatedAt: at(time) })),
+  ];
+  await Message.collection.insertMany(docs);
+  console.log(`MongoDB: ${docs.length} сообщений в чатах`);
+}
+
 async function main() {
   const ifEmpty = process.argv.includes('--if-empty');
   const reset = process.argv.includes('--reset');
@@ -120,6 +147,7 @@ async function main() {
   await connectMongo();
   const user = await ensurePostgres();
   const userId = user.id;
+  await ensureChat(user, reset);
 
   if (ifEmpty && (await Transaction.exists({ userId }))) {
     console.log('MongoDB уже содержит данные, сид пропущен');
@@ -141,11 +169,9 @@ async function main() {
   ]);
   const docs = buildTransactions(userId, { card, cash, savings });
 
-  // insertMany не вызывает pre('validate'), поэтому сумма чека считается через документ
   const prepared = docs.map((d) => new Transaction(d).recalcAmount());
   await Transaction.insertMany(prepared);
 
-  // Перенос операций ЛР2 из PostgreSQL: из двух связанных таблиц в один документ
   const legacy = await PgTransaction.findAll({ include: Category, order: [['id', 'ASC']] });
   await ImportedTransaction.insertMany(legacy.map((row) => ({
     userId,

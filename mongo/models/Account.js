@@ -11,7 +11,6 @@ const accountSchema = new Schema(
   { timestamps: true },
 );
 
-// Каскадное удаление: при удалении счета удаляются все его операции
 accountSchema.pre('findOneAndDelete', async function () {
   const account = await this.model.findOne(this.getFilter());
   if (account) await model('Transaction').deleteMany({ account: account._id });

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { CircleAlert, CircleCheck, X } from 'lucide-react';
+import { Bell, CircleAlert, CircleCheck, X } from 'lucide-react';
 
 const AppContext = createContext(null);
 
@@ -7,7 +7,6 @@ export function useApp() {
   return useContext(AppContext);
 }
 
-// Общее состояние приложения: месяц, справочник категорий, счета, версия данных и уведомления
 export function AppProvider({ value, children }) {
   const [toasts, setToasts] = useState([]);
   const nextId = useRef(1);
@@ -43,7 +42,7 @@ export function AppProvider({ value, children }) {
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>
-            {t.kind === 'error' ? <CircleAlert size={18} /> : <CircleCheck size={18} />}
+            {t.kind === 'error' ? <CircleAlert size={18} /> : t.kind === 'info' ? <Bell size={18} /> : <CircleCheck size={18} />}
             <span>{t.text}</span>
             <button type="button" onClick={() => dismiss(t.id)} aria-label="Закрыть">
               <X size={16} />
